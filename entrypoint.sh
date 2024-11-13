@@ -5,7 +5,7 @@
 	--uri tcp://0.0.0.0:10300 \
 	--data-dir /data \
 	--download-dir /data \
-	--model $MODEL
+	"$@"
 
 
 
