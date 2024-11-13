@@ -17,6 +17,10 @@ ARG GFX_TARGETS="gfx1100"
 ENV AMDGPU_TARGETS=$GFX_TARGETS
 RUN make -j 8 GGML_HIPBLAS=1
 
+COPY ./main ./examples/main
+RUN rm main examples/main/main.o
+RUN make -j 8 GGML_HIPBLAS=1
+
 RUN ldd /whisper.cpp/main | grep "/opt/rocm/lib" | awk '/=> \// { print $(NF-1) }' | while read lib; do \
         mkdir -p "/runtime/$(dirname $lib)" &&  cp "$lib" "/runtime/$lib"; \
     done
@@ -38,24 +42,21 @@ COPY --from=build /whisper.cpp /app//whisper.cpp
 
 FROM whisper
 
+ENV MODEL=small
+
 WORKDIR /app
 
 RUN apt update && \
     apt install -y --no-install-recommends curl python3 python3-pip python3-venv && \
     rm -rf /var/lib/apt/lists/*
 
-COPY wyoming_whisper_cpp ./wyoming_whisper_cpp
 COPY requirements.txt ./
-
 RUN python3 -m venv venv
 RUN	venv/bin/pip install -r requirements.txt
 
-COPY run.sh run.sh
+COPY wyoming_whisper_cpp ./wyoming_whisper_cpp
 
-ENTRYPOINT ["/app/venv/bin/python", \
-			"-m", "wyoming_whisper_cpp", \
-			"--whisper-cpp-dir", "/app/whisper.cpp", \
-			"--uri", "tcp://0.0.0.0:10300", \
-			"--data-dir", "/data", \
-			"--download-dir", "/data" \
-			]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
