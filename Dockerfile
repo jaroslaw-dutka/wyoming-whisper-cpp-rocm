@@ -15,7 +15,7 @@ RUN apt update && \
 
 RUN git clone https://github.com/ggerganov/whisper.cpp.git /app/whisper.cpp
 
-COPY ./main ./examples/main
+COPY ./whisper/main.cpp ./examples/main/
 RUN make -j8 GGML_HIPBLAS=1
 
 RUN ldd /app/whisper.cpp/main | grep "rocm" | awk '/=> \// { print $(NF-1) }' | while read lib; do \
@@ -54,7 +54,7 @@ COPY requirements.txt ./
 RUN python3 -m venv venv
 RUN	venv/bin/pip install -r requirements.txt
 
-COPY wyoming_whisper_cpp ./wyoming_whisper_cpp
+COPY wyoming-wrapper ./wyoming-wrapper
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
